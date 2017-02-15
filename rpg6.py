@@ -43,6 +43,7 @@ class Hero(Character):
         self.power = 5
         self.armor = 0
         self.evade = 0
+        self.swap = False
         self.bounty = 100
         self.arsenal = []
 
@@ -81,7 +82,6 @@ class Hero(Character):
             print "%s has received %d damage." % (self.name, (enemy.power - self.armor))
             if self.health <= 0:
                 print "%s is dead." % self.name
-
 
 class Goblin(Character):
     def __init__(self):
@@ -162,10 +162,10 @@ class Battle(object):
             # time.sleep(1.5)
             print "-----------------------"
             print "What do you want to do?"
-            print "1. fight %s" % enemy.name
-            print "2. do nothing"
-            print "3. flee"
-            print "4. use item from arsenal"
+            print "1. Fight %s" % enemy.name
+            print "2. Do nothing"
+            print "3. Flee"
+            print "4. Use item from arsenal"
             print "> ",
             input = int(raw_input())
             if input == 1:
@@ -175,6 +175,7 @@ class Battle(object):
             elif input == 3:
                 print "Goodbye."
                 exit(0)
+
             elif input == 4:
                 if len(hero.arsenal) == 0:
                     print "Arsenal empty."
@@ -185,15 +186,16 @@ class Battle(object):
                     print "Sorry arsenal is empty."
                 choice = int(raw_input("> "))
                 hero.arsenal[choice - 1].apply(hero)
+                continue
             else:
                 print "Invalid input %r" % input
                 continue
+
             enemy.attack(hero)
         if hero.alive():
             print "Congrats - you defeated the %s!" % enemy.name
             return True
         else:
-            print "YOU LOSE!"
             return False
 
 class Tonic(object):
@@ -232,9 +234,10 @@ class Evade(object):
     cost = 5
     name = 'evade'
     def apply(self, hero):
-        hero.tactics += 2
+        hero.evade += 2
         hero.arsenal.remove(self)
         print "%s's evade has increased to %s." % (hero.name, hero.evade)
+
 
 class Store(object):
     # If you define a variable in the scope of a class:
@@ -272,7 +275,7 @@ class Store(object):
                 print "Sorry that's not a valid choice."
 
 hero = Hero()
-enemies = [Goblin(),Zombie(), Shadow(), Wizard()]
+enemies = [Medic(), Shadow(), Wizard()]
 battle_engine = Battle()
 shopping_engine = Store()
 
