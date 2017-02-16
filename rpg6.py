@@ -43,7 +43,6 @@ class Hero(Character):
         self.power = 5
         self.armor = 0
         self.evade = 0
-        self.swap = False
         self.bounty = 100
         self.arsenal = []
 
@@ -61,6 +60,7 @@ class Hero(Character):
         print "%s's arsenal contents:" % self.name
         for i in range(len(self.arsenal)):
             print "%d. %s" % ((i + 1), self.arsenal[i].name)
+        print "%d. nevermind, take me back" % (len(self.arsenal) + 1)
 
     # Override Character attack method
     def attack(self, enemy):
@@ -89,6 +89,26 @@ class Goblin(Character):
         self.health = 6
         self.power = 2
         self.bounty = 5
+
+# power increases every time she's attacked
+class Princess(Character):
+    def __init__(self):
+        self.name = 'Princess'
+        self.health = 25
+        self.power = 1
+        self.bounty = 30
+
+    def attack(self, enemy):
+        if not self.alive():
+            return
+        print "%s attacks %s." % (self.name, enemy.name)
+        # Self is attacker here, will become enemy in recieve damage method
+        self.power = self.power * 2
+        enemy.receive_damage(self)
+        if not enemy.alive():
+            print "%s receives a bounty of %s coins for defeating the %s." % (self.name, enemy.bounty, enemy.name)
+            hero.coins += enemy.bounty
+        # time.sleep(1.5)
 
 class Wizard(Character):
     def __init__(self):
@@ -166,6 +186,7 @@ class Battle(object):
             print "2. Do nothing"
             print "3. Flee"
             print "4. Use item from arsenal"
+            print "5. Go to store"
             print "> ",
             input = int(raw_input())
             if input == 1:
@@ -184,9 +205,18 @@ class Battle(object):
                 hero.show_arsenal()
                 if len(hero.arsenal) == 0:
                     print "Sorry arsenal is empty."
+
                 choice = int(raw_input("> "))
-                hero.arsenal[choice - 1].apply(hero)
+                if (choice - 1) == len(hero.arsenal):
+                    continue
+                else:
+                    hero.arsenal[choice - 1].apply(hero, enemy)
                 continue
+
+            elif input == 5:
+                shopping_engine.do_shopping(hero, enemy)
+                continue
+
             else:
                 print "Invalid input %r" % input
                 continue
@@ -201,7 +231,7 @@ class Battle(object):
 class Tonic(object):
     cost = 5
     name = 'tonic'
-    def apply(self, hero):
+    def apply(self, hero, enemy):
         hero.health += 2
         hero.arsenal.remove(self)
         print "%s's health increased to %d." % (hero.name, hero.health)
@@ -209,7 +239,7 @@ class Tonic(object):
 class Sword(object):
     cost = 10
     name = 'sword'
-    def apply(self, hero):
+    def apply(self, hero, enemy):
         hero.power += 2
         hero.arsenal.remove(self)
         print "%s's power increased to %d." % (hero.name, hero.power)
@@ -217,7 +247,7 @@ class Sword(object):
 class SuperTonic(object):
     cost = 7
     name = 'super tonic'
-    def apply(self, hero):
+    def apply(self, hero, enemy):
         hero.health = 10
         hero.arsenal.remove(self)
         print "%s's health has been restored to 10." % (hero.name)
@@ -225,7 +255,7 @@ class SuperTonic(object):
 class Armor(object):
     cost = 5
     name = 'armor'
-    def apply(self, hero):
+    def apply(self, hero, enemy):
         hero.armor += 2
         hero.arsenal.remove(self)
         print "%s's armor has been increased to %s" % (hero.name, hero.armor)
@@ -233,18 +263,41 @@ class Armor(object):
 class Evade(object):
     cost = 5
     name = 'evade'
-    def apply(self, hero):
+    def apply(self, hero, enemy):
         hero.evade += 2
         hero.arsenal.remove(self)
         print "%s's evade has increased to %s." % (hero.name, hero.evade)
 
+class Swap(object):
+    cost = 5
+    name = 'swap powers'
+    # Can't figure out how to switch back after battle
+    def apply(self, hero, enemy):
+        hero.power, enemy.power = enemy.power, hero.power
+        print "%s and %s have swapped powers. Battle begins!" % (hero.name,  enemy.name)
+        hero.print_status()
+        enemy.print_status()
+        hero.attack(enemy)
+        enemy.attack(hero)
+        hero.power, enemy.power = enemy.power, hero.power
+
+class Invisibility(object):
+        cost = 5
+        name = 'invisibility'
+        # Can't figure out how to switch back after battle
+        def apply(self, hero, enemy):
+            print "%s is invisible this round. Battle begins!" % (hero.name)
+            hero.print_status()
+            enemy.print_status()
+            hero.attack(enemy)
+            print "%s is invisible, %s cannot attack!" % (hero.name, enemy.name)
 
 class Store(object):
     # If you define a variable in the scope of a class:
     # This is a class variable and you can access it like
     # Store.items => [Tonic, Sword]
-    items = [Tonic, Sword, SuperTonic, Armor, Evade]
-    def do_shopping(self, hero):
+    items = [Tonic, Sword, SuperTonic, Armor, Evade, Swap, Invisibility]
+    def do_shopping(self, hero, enemy):
         while True:
             print "====================="
             print "Welcome to the store!"
@@ -275,7 +328,7 @@ class Store(object):
                 print "Sorry that's not a valid choice."
 
 hero = Hero()
-enemies = [Medic(), Shadow(), Wizard()]
+enemies = [Goblin(), Medic(), Wizard()]
 battle_engine = Battle()
 shopping_engine = Store()
 
@@ -284,6 +337,6 @@ for enemy in enemies:
     if not hero_won:
         print "YOU LOSE!"
         exit(0)
-    shopping_engine.do_shopping(hero)
+    shopping_engine.do_shopping(hero, enemy)
 
 print "YOU WIN!"
